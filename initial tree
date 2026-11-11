@@ -1,1 +1,9 @@
-conda install -c ccb-sb plsdbapi #conda install for PLDSB
+#setting up R working env
+library (EnvNJ)
+
+#concatenating fasta files into one
+fastaconc(otus=c('AP005147.1 | R64', 'NC_004464.2 | pCTX-M3', 'NC_014016.1 | pKpQIL', 'NZ_CP124826.1 | pOXA-48'), out.file="./compiled.fasta")
+
+#in bash
+#aligning seqs
+mafft --thread 50 --auto compiled.fasta > compiled.aln
