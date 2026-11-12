@@ -1,16 +1,43 @@
-#setting up R working env
-library (EnvNJ)
+###### setting up R working env ######
+library(micropan)
 
-#concatenating fasta files into one
-fastaconc(otus=c('AP005147.1 | R64', 'NC_004464.2 | pCTX-M3', 'NC_014016.1 | pKpQIL', 'NZ_CP124826.1 | pOXA-48'), out.file="./compiled.fasta")
+initial_trees <- read.csv("initial_trees.csv")
 
-#in bash
-#aligning seqs
+###### downloading fasta seqs from accession numbers ######
+genome.file <- tempfile(pattern = "Inc", fileext = ".fna")
+entrezDownload(initial_trees$NCBI.Accession.Number, out.file = genome.file, verbose = T)
+
+###### in bash ###### 
+open $TMPDIR
+cp entrezDownload_output compiled.fasta   #entrezDownload stored in a temp file 
+
+###### aligning seqs ######
 mafft --thread 50 --auto compiled.fasta > compiled.aln
 
-#assessing alignment
+###### assessing alignment ######
 cp compiled.aln compiled_aln.fasta 
 python3 AMAS/amas/AMAS.py summary -f fasta -d dna -i compiled_aln.fasta
 
-#estimating best fit model
+###### estimating best fit model ######
 ~/Downloads/modeltest-ng/modeltest-ng-osx -d nt -i compiled_aln.fasta -o bestfit
+
+###### building tree ######
+~/Downloads/raxml-ng_v2/raxml-ng --all --msa compiled_aln.fasta --model GTR --prefix compiled_aln --seed 21231 --bs-metric fbp,tbe --redo
+
+###### visualising the tree in R ######
+###### setting up environment ######
+library(ape)
+library(ggtree)
+library(phytools)
+library(treeio)
+library(ggplot2)
+
+tree <- read.tree("compiled_aln.raxml.bestTree")
+
+ggtree(tree) + 
+geom_treescale(0,0) + 
+geom_tiplab(hjust = 0, size = 4) + 
+coord_cartesian(clip = 'off') + 
+theme_tree2(plot.margin=margin(8,90,8,8)) +
+ggtitle("Nucleotide level phylogenetic of Inc plasmids tree using model GTR") + 
+theme(plot.title = element_text(hjust = 0.5))
