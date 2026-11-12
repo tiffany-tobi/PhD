@@ -7,3 +7,10 @@ fastaconc(otus=c('AP005147.1 | R64', 'NC_004464.2 | pCTX-M3', 'NC_014016.1 | pKp
 #in bash
 #aligning seqs
 mafft --thread 50 --auto compiled.fasta > compiled.aln
+
+#assessing alignment
+cp compiled.aln compiled_aln.fasta 
+python3 AMAS/amas/AMAS.py summary -f fasta -d dna -i compiled_aln.fasta
+
+#estimating best fit model
+~/Downloads/modeltest-ng/modeltest-ng-osx -d nt -i compiled_aln.fasta -o bestfit
