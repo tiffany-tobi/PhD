@@ -19,10 +19,10 @@ cp compiled.aln compiled_aln.fasta
 python3 AMAS/amas/AMAS.py summary -f fasta -d dna -i compiled_aln.fasta
 
 ###### estimating best fit model ######
-~/Downloads/modeltest-ng/modeltest-ng-osx -d nt -i compiled_aln.fasta -o bestfit
+~/Downloads/modeltest-ng/modeltest-ng-osx -d nt -p 8 -i compiled_aln.fasta -o bestfit #-p denotes number of threads
 
 ###### building tree ######
-~/Downloads/raxml-ng_v2/raxml-ng --all --msa compiled_aln.fasta --model GTR --prefix compiled_aln --seed 21231 --bs-metric fbp,tbe --redo
+~/Downloads/raxml-ng_v2/raxml-ng --all --msa compiled_aln.fasta --model GTR+G4 --prefix compiled_aln --seed 21231 --bs-metric fbp,tbe --redo
 
 ###### visualising the tree in R ######
 ###### setting up environment ######
@@ -31,13 +31,21 @@ library(ggtree)
 library(phytools)
 library(treeio)
 library(ggplot2)
+library(stringi)
 
 tree <- read.tree("compiled_aln.raxml.bestTree")
+tip_labels <- data.frame(tree$tip.label)
+tip_labels$tree.tip.label <- stri_replace_all_regex(tip_labels$tree.tip.label, pattern = c("\\.1", "\\.2"), replacement = (c("","")), vectorize = F)
+
+initial_trees <- read.csv("initial_trees.csv")
+initial_trees$NCBI.Accession.Number <- stri_replace_all_regex(initial_trees$NCBI.Accession.Number, pattern = c("\\.1", "\\.2"), replacement = (c("","")), vectorize = F)
+info <- data.frame (origin = initial_trees$NCBI.Accession.Number, Inc = initial_trees$Inc.Group)
+inc <- merge(tip_labels, info, by.x = 'tree.tip.label', by.y = 'origin', sort = F)
+tree$tip.label <- inc$Inc
 
 ggtree(tree) + 
 geom_treescale(0,0) + 
 geom_tiplab(hjust = 0, size = 4) + 
 coord_cartesian(clip = 'off') + 
 theme_tree2(plot.margin=margin(8,90,8,8)) +
-ggtitle("Nucleotide level phylogenetic of Inc plasmids tree using model GTR") + 
-theme(plot.title = element_text(hjust = 0.5))
+ggtitle("Nucleotide level phylogenetic using model of Inc plasmids tree GTR+G4")
